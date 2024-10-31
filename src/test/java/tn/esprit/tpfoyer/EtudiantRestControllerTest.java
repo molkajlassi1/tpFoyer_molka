@@ -1,24 +1,26 @@
-package tn.esprit.tpfoyer;
-
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tn.esprit.tpfoyer.control.EtudiantRestController;
 import tn.esprit.tpfoyer.entity.Etudiant;
 import tn.esprit.tpfoyer.service.IEtudiantService;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 public class EtudiantRestControllerTest {
+
+    private MockMvc mockMvc;
 
     @Mock
     private IEtudiantService etudiantService;
@@ -27,102 +29,74 @@ public class EtudiantRestControllerTest {
     private EtudiantRestController etudiantRestController;
 
     @BeforeEach
-    public void setup() {
+    public void setUp() {
         MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(etudiantRestController).build();
     }
 
     @Test
-    public void testGetEtudiants() {
-        // Arrange
-        List<Etudiant> etudiants = new ArrayList<>();
-        etudiants.add(new Etudiant(1L, "John", "Doe", 12345678L, new Date(), new HashSet<>()));
-        etudiants.add(new Etudiant(2L, "Jane", "Doe", 87654321L, new Date(), new HashSet<>()));
-
+    public void testGetEtudiants() throws Exception {
+        List<Etudiant> etudiants = Arrays.asList(
+                new Etudiant(1, "John", "Doe", 12345678, new Date(), null),
+                new Etudiant(2, "Jane", "Doe", 87654321, new Date(), null)
+        );
         when(etudiantService.retrieveAllEtudiants()).thenReturn(etudiants);
 
-        // Act
-        List<Etudiant> result = etudiantRestController.getEtudiants();
-
-        // Assert
-        assertEquals(2, result.size());
-        assertEquals("John", result.get(0).getNomEtudiant());
+        mockMvc.perform(get("/etudiant/retrieve-all-etudiants"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nomEtudiant").value("John"))
+                .andExpect(jsonPath("$[1].nomEtudiant").value("Jane"));
     }
 
     @Test
-    public void testRetrieveEtudiantParCin() {
-        // Arrange
-        Long cin = 12345678L;
-        Etudiant etudiant = new Etudiant(1L, "John", "Doe", cin, new Date(), new HashSet<>());
+    public void testRetrieveEtudiantParCin() throws Exception {
+        Etudiant etudiant = new Etudiant(1, "John", "Doe", 12345678, new Date(), null);
+        when(etudiantService.recupererEtudiantParCin(12345678L)).thenReturn(etudiant);
 
-        when(etudiantService.recupererEtudiantParCin(cin)).thenReturn(etudiant);
-
-        // Act
-        Etudiant result = etudiantRestController.retrieveEtudiantParCin(cin);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(cin, result.getCinEtudiant());
+        mockMvc.perform(get("/etudiant/retrieve-etudiant-cin/12345678"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nomEtudiant").value("John"));
     }
 
     @Test
-    public void testRetrieveEtudiant() {
-        // Arrange
-        Long id = 1L;
-        Etudiant etudiant = new Etudiant(id, "John", "Doe", 12345678L, new Date(), new HashSet<>());
+    public void testRetrieveEtudiant() throws Exception {
+        Etudiant etudiant = new Etudiant(1, "John", "Doe", 12345678, new Date(), null);
+        when(etudiantService.retrieveEtudiant(1L)).thenReturn(etudiant);
 
-        when(etudiantService.retrieveEtudiant(id)).thenReturn(etudiant);
-
-        // Act
-        Etudiant result = etudiantRestController.retrieveEtudiant(id);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(id, result.getIdEtudiant());
+        mockMvc.perform(get("/etudiant/retrieve-etudiant/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nomEtudiant").value("John"));
     }
 
     @Test
-    public void testAddEtudiant() {
-        // Arrange
-        Etudiant etudiant = new Etudiant(0L, "John", "Doe", 12345678L, new Date(), new HashSet<>());
+    public void testAddEtudiant() throws Exception {
+        Etudiant etudiant = new Etudiant(1, "John", "Doe", 12345678, new Date(), null);
+        when(etudiantService.addEtudiant(any(Etudiant.class))).thenReturn(etudiant);
 
-        // Simulate the service behavior
-        when(etudiantService.addEtudiant(any(Etudiant.class)))
-                .thenReturn(new Etudiant(1L, "John", "Doe", 12345678L, new Date(), new HashSet<>()));
-
-        // Act
-        Etudiant result = etudiantRestController.addEtudiant(etudiant);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals("John", result.getNomEtudiant());
-        assertEquals(1L, result.getIdEtudiant());  // Ensure the returned ID is correct
-    }
-
-
-    @Test
-    public void testRemoveEtudiant() {
-        // Arrange
-        Long id = 1L;
-
-        // Act
-        etudiantRestController.removeEtudiant(id);
-
-        // Assert
-        verify(etudiantService, times(1)).removeEtudiant(id);
+        mockMvc.perform(post("/etudiant/add-etudiant")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nomEtudiant\": \"John\", \"prenomEtudiant\": \"Doe\", \"cinEtudiant\": 12345678}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nomEtudiant").value("John"));
     }
 
     @Test
-    public void testModifyEtudiant() {
-        // Arrange
-        Etudiant etudiant = new Etudiant(1L, "John", "Doe", 12345678L, new Date(), new HashSet<>());
+    public void testRemoveEtudiant() throws Exception {
+        doNothing().when(etudiantService).removeEtudiant(1L);
 
+        mockMvc.perform(delete("/etudiant/remove-etudiant/1"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testModifyEtudiant() throws Exception {
+        Etudiant etudiant = new Etudiant(1, "John", "Doe", 12345678, new Date(), null);
         when(etudiantService.modifyEtudiant(any(Etudiant.class))).thenReturn(etudiant);
 
-        // Act
-        Etudiant result = etudiantRestController.modifyEtudiant(etudiant);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals("John", result.getNomEtudiant());
+        mockMvc.perform(put("/etudiant/modify-etudiant")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idEtudiant\": 1, \"nomEtudiant\": \"John\", \"prenomEtudiant\": \"Doe\", \"cinEtudiant\": 12345678}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nomEtudiant").value("John"));
     }
 }
