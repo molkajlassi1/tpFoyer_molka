@@ -85,7 +85,9 @@ public class EtudiantRestControllerTest {
         // Arrange
         Etudiant etudiant = new Etudiant(0L, "John", "Doe", 12345678L, new Date(), new HashSet<>());
 
-        when(etudiantService.addEtudiant(any(Etudiant.class))).thenReturn(new Etudiant(1L, "John", "Doe", 12345678L, new Date(), new HashSet<>()));
+        // Simulate the service behavior
+        when(etudiantService.addEtudiant(any(Etudiant.class)))
+                .thenReturn(new Etudiant(1L, "John", "Doe", 12345678L, new Date(), new HashSet<>()));
 
         // Act
         Etudiant result = etudiantRestController.addEtudiant(etudiant);
@@ -93,7 +95,9 @@ public class EtudiantRestControllerTest {
         // Assert
         assertNotNull(result);
         assertEquals("John", result.getNomEtudiant());
+        assertEquals(1L, result.getIdEtudiant());  // Ensure the returned ID is correct
     }
+
 
     @Test
     public void testRemoveEtudiant() {
