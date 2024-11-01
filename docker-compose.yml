@@ -15,7 +15,10 @@ services:
   app-tpfoyer:
     depends_on:
       - mysqldb
-    image: molkajlassi999/tp-foyer:5.0.0  # Change to match your image name and tag
+    image: molkajlassi999/tp-foyer-5.0.0
+
+
+    # Change to match your image name and tag
     restart: on-failure
     ports:
       - 8089:8089
